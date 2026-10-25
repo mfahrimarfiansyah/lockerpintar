@@ -6,6 +6,11 @@ import { prisma } from "@/lib/db";
 
 export const auth = betterAuth({
   appName: "LockerPintar",
+  trustedOrigins: [
+    ...(process.env.BETTER_AUTH_URL ? [process.env.BETTER_AUTH_URL] : []),
+    ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
+    "https://lockerpintar.vercel.app",
+  ],
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   emailAndPassword: {
     enabled: true,
