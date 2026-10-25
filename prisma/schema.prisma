@@ -1,0 +1,239 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Peran {
+  ADMIN
+  PETUGAS
+  KIOSK
+}
+
+enum ModeKunci {
+  SIMULASI
+  MANUAL
+}
+
+enum KondisiLoker {
+  NORMAL
+  PERBAIKAN
+  NONAKTIF
+}
+
+enum StatusPeminjam {
+  AKTIF
+  DIBLOKIR
+}
+
+enum SumberPeminjam {
+  KIOSK
+  IMPOR
+  PETUGAS
+}
+
+enum CaraSelesai {
+  NORMAL
+  PAKSA
+}
+
+enum JenisLog {
+  SCAN
+  REGISTRASI
+  PINJAM
+  BUKA_ULANG
+  KEMBALI
+  PIN_SALAH
+  PIN_TERKUNCI
+  DITOLAK
+  PAKSA_BUKA
+  PAKSA_SELESAI
+  RESET_PIN
+  GANTI_KARTU
+  BLOKIR
+  BUKA_BLOKIR
+  IMPOR
+  UBAH_DATA
+  KUNCI_GAGAL
+}
+
+model Lokasi {
+  id        String    @id @default(cuid())
+  nama      String
+  slug      String    @unique
+  alamat    String?
+  /// Zona waktu IANA, mis. Asia/Makassar (WITA)
+  zonaWaktu String    @default("Asia/Makassar")
+  /// Format "HH:mm"
+  jamBuka   String    @default("07:00")
+  /// Format "HH:mm"; batas pinjam = jam tutup hari itu
+  jamTutup  String    @default("17:00")
+  modeKunci ModeKunci @default(SIMULASI)
+  wajibPin  Boolean   @default(true)
+  aktif     Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  loker    Loker[]
+  pengguna Pengguna[]
+}
+
+model Loker {
+  id        String       @id @default(cuid())
+  lokasiId  String
+  /// Mis. "A-07", unik per lokasi
+  kode      String
+  blok      String
+  baris     Int
+  kolom     Int
+  ukuran    String?
+  kondisi   KondisiLoker @default(NORMAL)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  lokasi     Lokasi       @relation(fields: [lokasiId], references: [id], onDelete: Cascade)
+  peminjaman Peminjaman[]
+
+  @@unique([lokasiId, kode])
+  @@index([lokasiId, blok, baris, kolom])
+}
+
+/// Di layar disebut "Anggota": pemegang kartu (karyawan, siswa/mahasiswa, member, dll.).
+model Peminjam {
+  id                String         @id @default(cuid())
+  /// Nomor ID anggota, mis. NIK karyawan, NIM, atau nomor member
+  nomorInduk        String         @unique
+  nama              String
+  /// Unit/divisi/kelas (opsional)
+  unit              String?
+  noWa              String?
+  /// Isi barcode/QR/UID chip kartu yang sudah dinormalkan
+  kodeKartu         String?        @unique
+  pinHash           String?
+  pinSalah          Int            @default(0)
+  pinTerkunciSampai DateTime?
+  status            StatusPeminjam @default(AKTIF)
+  alasanBlokir      String?
+  sumber            SumberPeminjam
+  setujuDataAt      DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  peminjaman Peminjaman[]
+}
+
+model Peminjaman {
+  id          String       @id @default(cuid())
+  peminjamId  String
+  lokerId     String
+  mulaiAt     DateTime     @default(now())
+  batasAt     DateTime
+  /// Kosong = peminjaman masih aktif
+  selesaiAt   DateTime?
+  caraSelesai CaraSelesai?
+  alasanPaksa String?
+
+  peminjam Peminjam @relation(fields: [peminjamId], references: [id], onDelete: Restrict)
+  loker    Loker    @relation(fields: [lokerId], references: [id], onDelete: Restrict)
+
+  @@index([lokerId, selesaiAt])
+  @@index([peminjamId, selesaiAt])
+  @@index([mulaiAt])
+}
+
+model LogAktivitas {
+  id         String   @id @default(cuid())
+  waktu      DateTime @default(now())
+  jenis      JenisLog
+  penggunaId String?
+  peminjamId String?
+  lokerId    String?
+  lokasiId   String?
+  detail     Json?
+
+  pengguna Pengguna? @relation(fields: [penggunaId], references: [id], onDelete: SetNull)
+
+  @@index([waktu])
+  @@index([peminjamId])
+}
+
+/// Akun staf & kiosk (tabel "user" Better Auth)
+model Pengguna {
+  id              String    @id @default(cuid())
+  nama            String
+  email           String    @unique
+  emailVerified   Boolean   @default(false)
+  image           String?
+  peran           Peran     @default(PETUGAS)
+  /// Wajib untuk akun KIOSK
+  lokasiId        String?
+  aktif           Boolean   @default(true)
+  terakhirAktifAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  lokasi Lokasi?        @relation(fields: [lokasiId], references: [id], onDelete: SetNull)
+  sesi   Sesi[]
+  akun   Akun[]
+  log    LogAktivitas[]
+}
+
+model Sesi {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+
+  pengguna Pengguna @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Akun {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  pengguna Pengguna @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Verifikasi {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+/// Hanya satu baris (id = 1)
+model Pengaturan {
+  id                 Int      @id @default(1)
+  maksPinjamPerOrang Int      @default(1)
+  maksSalahPin       Int      @default(5)
+  lamaKunciPinMenit  Int      @default(5)
+  resetKioskDetik    Int      @default(10)
+  updatedAt          DateTime @updatedAt
+}

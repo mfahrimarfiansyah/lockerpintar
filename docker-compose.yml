@@ -1,0 +1,19 @@
+# PostgreSQL untuk pengembangan bagi yang memakai Docker
+# (alternatif dari `npm run db:start`). Isi .env:
+#   DATABASE_URL="postgresql://postgres:postgres@localhost:54329/lockerpintar"
+#   DATABASE_URL_TEST="postgresql://postgres:postgres@localhost:54329/lockerpintar_test"
+services:
+  db:
+    image: postgres:17-alpine
+    ports:
+      - "127.0.0.1:54329:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: lockerpintar
+    volumes:
+      - db-dev:/var/lib/postgresql/data
+      - ./scripts/init-db-uji.sql:/docker-entrypoint-initdb.d/init-db-uji.sql:ro
+
+volumes:
+  db-dev:
