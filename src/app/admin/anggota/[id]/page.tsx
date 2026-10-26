@@ -8,6 +8,7 @@ import {
   TombolPaksaBuka,
   TombolPaksaSelesai,
 } from "@/components/admin/aksi-peminjaman";
+import { KartuDigital } from "@/components/admin/kartu-digital";
 import { LABEL_LOG, tautanWa } from "@/components/admin/umum";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -92,7 +93,15 @@ async function KontenDetail({ params }: { params: Promise<{ id: string }> }) {
                 </div>
               ))}
             </dl>
-            <AksiAnggota peminjamId={m.id} diblokir={m.status === "DIBLOKIR"} />
+            <div className="flex flex-wrap gap-2 pt-1">
+              <KartuDigital
+                nomorInduk={m.nomorInduk}
+                nama={m.nama}
+                unit={m.unit}
+                kodeKartu={m.kodeKartu}
+              />
+              <AksiAnggota peminjamId={m.id} diblokir={m.status === "DIBLOKIR"} />
+            </div>
           </CardContent>
         </Card>
 
