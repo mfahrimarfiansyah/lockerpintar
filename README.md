@@ -63,7 +63,7 @@ Bila memakai Docker, ganti `npm run db:start` dengan `docker compose up -d` dan 
 
 | Peran | Email | Password |
 |---|---|---|
-| Admin | `admin@lockerpintar.local` | `admin12345` |
+| Admin | `admin@lockerpintar.local` | `admin113003#` |
 | Petugas | `petugas@lockerpintar.local` | `petugas12345` |
 | Kiosk Lobi Utama | `kiosk.lobi@lockerpintar.local` | `kiosk12345` |
 | Kiosk Gedung B | `kiosk.gedungb@lockerpintar.local` | `kiosk12345` |
