@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ArrowUpRightIcon } from "lucide-react";
 import { Logo } from "@/components/grafiti";
 
 export function HeaderPublik() {
@@ -12,16 +11,6 @@ export function HeaderPublik() {
           className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/60"
         >
           <Logo ukuran="sm" />
-        </Link>
-        <Link
-          href="/masuk"
-          className="group inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border-2 border-tepi px-3 text-sm font-semibold transition-colors outline-none hover:border-limau hover:text-limau focus-visible:ring-3 focus-visible:ring-ring/60"
-        >
-          Masuk staf
-          <ArrowUpRightIcon
-            className="size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-            aria-hidden
-          />
         </Link>
       </div>
     </header>
